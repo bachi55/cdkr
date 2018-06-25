@@ -1,0 +1,14 @@
+.Rproj.user
+.Rhistory
+.RData
+.Ruserdata
+cdkr.Rproj
+.Rprofile
+.Rlibs/
+*.o
+*.so
+*.gz
+*.rds
+*.Rcheck/
+rcdkjar/classes/
+rcdkjar/rcdk.jar
