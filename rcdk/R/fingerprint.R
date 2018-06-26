@@ -23,7 +23,7 @@ get.fingerprint <- function(molecule, type = 'standard', fp.mode = 'bit', depth=
            signature = .jnew('org/openscience/cdk/fingerprint/SignatureFingerprinter', depth),
            circular = .jnew('org/openscience/cdk/fingerprint/CircularFingerprinter'),
            substructure = 
-               if(length(substructure.pattern) == 0) 
+               if (length(substructure.pattern) == 0) 
                    # Loads the default group substructures
                    { .jnew('org/openscience/cdk/fingerprint/SubstructureFingerprinter') }
                else
