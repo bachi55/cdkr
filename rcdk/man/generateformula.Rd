@@ -23,11 +23,11 @@ generate.formula(mass, window=0.01, elements=list(c("C",0,50),c("H",0,50),
                  validation=FALSE, charge=0.0)
 generate.formula.iter(mass, window = 0.01,
                               elements = list(
-                                C=c(0,50),
-                                H=c(0,50),
-                                N=c(0,50),
-                                O=c(0,50),
-                                S=c(0,50)),
+                                c('C', 0,50),
+                                c('H', 0,50),
+                                c('N', 0,50),
+                                c('O', 0,50),
+                                c('S', 0,50)),
                               validation = FALSE,
                               charge = 0.0,
                               as.string=TRUE)
@@ -66,14 +66,14 @@ for (i in mfSet) {
 
 
 mit <- generate.formula.iter(18.03383,charge=1,
-                          elements=list(C=c(0,50), H=c(0,50), N=c(0,50)))
+                          elements=list(c("C",0,50), c("H",0,50), c("N",0,50)))
 hit <- itertools::ihasNext(mit)
 while (itertools::hasNext(hit)) 
   print(iterators::nextElem(hit))
 
 ## Generate formulae using N15
 mit <- generate.formula.iter(18.03383, window=0.1, charge=1,
-                          elements=list(C=c(0,50), H=c(0,50), N=c(0,50,15)))
+                          elements=list(c("C",0,50), c("H",0,50), c("N",0,50,15)))
 hit <- itertools::ihasNext(mit)
 while (itertools::hasNext(hit)) 
   print(iterators::nextElem(hit))			  
