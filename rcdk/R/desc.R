@@ -6,12 +6,12 @@
   if (!is.null(.jcall(dval, "Ljava/lang/Exception;", "getException"))) {
     return(rep(NA, nexpected))
   }
-  
+
   nval <- numeric()
   if (!inherits(dval,'jobjRef') && is.na(dval)) {
     return(NA)
   }
-  
+
   result <- .jcall(dval, "Lorg/openscience/cdk/qsar/result/IDescriptorResult;", "getValue")
   methods <- .jmethods(result)
 
@@ -20,15 +20,15 @@
     len <- .jcall(result, "I", "length")
     for (i in 1:len) nval[i] <- .jcall(result, "D", "get", as.integer(i-1))
   } else if ("public int org.openscience.cdk.qsar.result.IntegerArrayResult.get(int)" %in% methods) {
-    result <- .jcast(result, "org/openscience/cdk/qsar/result/IntegerArrayResult")    
+    result <- .jcast(result, "org/openscience/cdk/qsar/result/IntegerArrayResult")
     len <- .jcall(result, "I", "length")
-    for (i in 1:len) nval[i] <- .jcall(result, "I", "get", as.integer(i-1))    
+    for (i in 1:len) nval[i] <- .jcall(result, "I", "get", as.integer(i-1))
   }  else if ("public int org.openscience.cdk.qsar.result.IntegerResult.intValue()" %in% methods) {
-    result <- .jcast(result, "org/openscience/cdk/qsar/result/IntegerResult")    
+    result <- .jcast(result, "org/openscience/cdk/qsar/result/IntegerResult")
     nval <- .jcall(result, "I", "intValue")
   } else if ("public double org.openscience.cdk.qsar.result.DoubleResult.doubleValue()" %in% methods) {
-    result <- .jcast(result, "org/openscience/cdk/qsar/result/DoubleResult")    
-    nval <- .jcall(result, "D", "doubleValue")    
+    result <- .jcast(result, "org/openscience/cdk/qsar/result/DoubleResult")
+    nval <- .jcall(result, "D", "doubleValue")
   }
 
   return(nval)
@@ -42,9 +42,9 @@
   if (type == 'molecular') {
     interface <- J("org.openscience.cdk.qsar.IMolecularDescriptor")
   } else if (type == 'atomic') {
-    interface <- J("org.openscience.cdk.qsar.IAtomicDescriptor")    
+    interface <- J("org.openscience.cdk.qsar.IAtomicDescriptor")
   } else if (type == 'bond') {
-    interface <- J("org.openscience.cdk.qsar.IBondDescriptor")        
+    interface <- J("org.openscience.cdk.qsar.IBondDescriptor")
   }
   dklass <- interface@jobj
   dcob <- get.chem.object.builder()
@@ -94,7 +94,7 @@ get.desc.categories <- function() {
   gsub("Descriptor", "", cats)
 }
 
-eval.desc <- function(molecules, which.desc, verbose = FALSE) {
+eval.desc <- function(molecules, which.desc, verbose = FALSE, desc.params=list()) {
   if (class(molecules) != 'list') {
     jclassAttr <- attr(molecules, "jclass")
     if (jclassAttr != "org/openscience/cdk/interfaces/IAtomContainer") {
@@ -108,15 +108,62 @@ eval.desc <- function(molecules, which.desc, verbose = FALSE) {
     }
   }
 
+  # Stop if descriptor parameters are passed, but more than one parameter is
+  # supposed to be calculated.
+  if ((length(desc.params) > 0) & (length(which.desc) > 1)) {
+      stop("Descriptor parameters can only be passed, if a single descriptor is calculated.")
+  }
+
   dcob <- get.chem.object.builder()
-  
+
   if (length(which.desc) == 1) {
     desc <- .jnew(which.desc)
     .jcall(desc, "V", "initialise", dcob)
-    
+
     dnames <- .jcall(desc, "[Ljava/lang/String;", "getDescriptorNames")
     dnames <- gsub('-', '.', dnames)
-    
+
+    if (length(desc.params) > 0) {
+        # Check whether all passed parameters are valued for the requested descriptor
+        supp_params <- .jcall(desc, "[Ljava/lang/String;", "getParameterNames")
+
+        if (length(supp_params) > 0) {
+            if (! all(names(desc.params) %in% supp_params)) {
+                stop("Not all provided parameters are supported by the requested descriptor.")
+            }
+
+            # Create list of objects subsequently passed to the descriptor
+            obj_l <- list()
+            for (idx in seq(along=supp_params)) {
+                if (supp_params[idx] %in% names(desc.params)) {
+                    d_param_val <- desc.params[[supp_params[idx]]]
+                    d_param_cls <- class(d_param_val)
+                    obj_l <- switch(
+                        d_param_cls,
+                        character=c(obj_l, list(
+                            .jnew("java/lang/String", d_param_val))),
+                        numeric=c(obj_l, list(
+                            .jnew("java/lang/Double", d_param_val))),
+                        integer=c(obj_l, list(
+                            .jnew("java/lang/Integer", d_param_val))),
+                        logical=c(obj_l, list(
+                            .jnew("java/lang/Boolean", d_param_val))),
+                        stop(paste("Unsupported parameter class (datatype):",
+                                   d_param_cls))
+                    )
+                }
+            }
+            # Pass parameters
+            .jcall(desc, "V", "setParameters", .jarray(obj_l), check=FALSE)
+            excp <- .jgetEx(clear=TRUE)
+            if (! is.null(excp)) {
+                stop(paste("Could not set parameters:", excp$getMessage()))
+            }
+        } else {
+            warning("The requested descriptor does not support parameters.")
+        }
+    }
+
     descvals <- lapply(molecules, function(a,b) {
       val <- tryCatch({.jcall(b, "Lorg/openscience/cdk/qsar/DescriptorValue;", "calculate", a)},
                       warning = function(e) return(NA),
@@ -125,7 +172,7 @@ eval.desc <- function(molecules, which.desc, verbose = FALSE) {
 
     vals <- lapply(descvals, .get.desc.values, nexpected = length(dnames))
     vals <- data.frame(do.call('rbind', vals))
-    names(vals) <- dnames 
+    names(vals) <- dnames
     return(vals)
   } else {
     counter <- 1
@@ -136,7 +183,7 @@ eval.desc <- function(molecules, which.desc, verbose = FALSE) {
                          , "\n") }
       desc <- .jnew(desc)
       .jcall(desc, "V", "initialise", dcob)
-      
+
       dnames <- .jcall(desc, "[Ljava/lang/String;", "getDescriptorNames")
       dnames <- gsub('-', '.', dnames)
 
@@ -150,11 +197,11 @@ eval.desc <- function(molecules, which.desc, verbose = FALSE) {
       if (length(vals) == 1 && is.na(vals)) {
         vals <- as.data.frame(matrix(NA, nrow=1, ncol=length(dnames)))
       }
-      
+
       names(vals) <- dnames
       ## idx <- which(is.na(names(vals)))
       ## if (length(idx) > 0) vals <- vals[,-idx]
-      
+
       dl[[counter]] <- vals
       counter <- counter + 1
     }
