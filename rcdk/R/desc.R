@@ -140,16 +140,11 @@ eval.desc <- function(molecules, which.desc, verbose = FALSE, desc.params=list()
                     d_param_cls <- class(d_param_val)
                     obj_l <- switch(
                         d_param_cls,
-                        character=c(obj_l, list(
-                            .jnew("java/lang/String", d_param_val))),
-                        numeric=c(obj_l, list(
-                            .jnew("java/lang/Double", d_param_val))),
-                        integer=c(obj_l, list(
-                            .jnew("java/lang/Integer", d_param_val))),
-                        logical=c(obj_l, list(
-                            .jnew("java/lang/Boolean", d_param_val))),
-                        stop(paste("Unsupported parameter class (datatype):",
-                                   d_param_cls))
+                        character=c(obj_l, list(.jnew("java/lang/String", d_param_val))),
+                        numeric=c(obj_l, list(.jnew("java/lang/Double", d_param_val))),
+                        integer=c(obj_l, list(.jnew("java/lang/Integer", d_param_val))),
+                        logical=c(obj_l, list(.jnew("java/lang/Boolean", d_param_val))),
+                        stop(paste("Unsupported parameter class (datatype):", d_param_cls))
                     )
                 }
             }
